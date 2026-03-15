@@ -1,0 +1,65 @@
+# Set these in Portainer stack env vars: UPLOAD_LOCATION, DB_PASSWORD, DB_USERNAME,
+# DB_DATABASE_NAME, DB_DATA_LOCATION; optional: IMMICH_VERSION (default: release)
+services:
+  immich-server:
+    container_name: immich_server
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    extends:
+      file: hwaccel.transcoding.yml
+      service: vaapi
+    volumes:
+      - ${UPLOAD_LOCATION}:/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      # Use container names since we are now on a bridge network
+      DB_HOSTNAME: immich_postgres
+      REDIS_HOSTNAME: immich_redis
+      IMMICH_MACHINE_LEARNING_URL: http://immich_machine_learning:3003
+    ports:
+      - "2283:2283"
+    depends_on:
+      - redis
+      - database
+    restart: always
+    networks:
+      - immich-internal
+      - proxy-net
+
+  immich-machine-learning:
+    container_name: immich_machine_learning
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    volumes:
+      - model-cache:/cache
+    restart: always
+    networks:
+      - immich-internal
+
+  redis:
+    container_name: immich_redis
+    # Stable tag for early 2026
+    image: docker.io/valkey/valkey:8
+    restart: always
+    networks:
+      - immich-internal
+
+  database:
+    container_name: immich_postgres
+    # Stable tag with VectorChord support
+    image: ghcr.io/immich-app/postgres:15-vectorchord0.5.3
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
+    shm_size: 128mb
+    restart: always
+    networks:
+      - immich-internal
+
+networks:
+  immich-internal:
+    driver: bridge
+  proxy-net:
+    external: true

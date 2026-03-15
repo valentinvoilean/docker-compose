@@ -1,0 +1,17 @@
+services:
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto:latest
+    restart: unless-stopped
+    volumes:
+      - /share/Container/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - /share/Container/mosquitto/data:/mosquitto/data
+      - /share/Container/mosquitto/log:/mosquitto/log
+    networks:
+      - mqtt-net
+    ports:
+      - "1883:1883"
+
+networks:
+  mqtt-net:
+    external: true
