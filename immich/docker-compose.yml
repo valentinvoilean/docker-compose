@@ -62,3 +62,6 @@ networks:
     driver: bridge
   proxy-net:
     external: true
+
+volumes:
+  model-cache:
