@@ -1,0 +1,12 @@
+services:
+  evcc:
+    container_name: evcc
+    image: evcc/evcc:0.302.1
+    restart: always
+    volumes:
+      - /share/Container/evcc/evcc.yaml:/etc/evcc.yaml
+      - /share/Container/evcc/data:/root/.evcc
+    ports:
+      - 7070:7070
+      - 8887:8887
+    network_mode: "host"
