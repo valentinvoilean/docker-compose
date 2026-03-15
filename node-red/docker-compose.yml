@@ -1,0 +1,20 @@
+services:
+  nodered:
+    container_name: nodered
+    image: nodered/node-red:4.1.6
+    restart: always
+    volumes:
+      - /share/Container/nodered/data:/data
+    environment:
+      - TZ=Europe/Bucharest
+    ports:
+      - "1880:1880"
+    networks:
+      - proxy-net
+      - mqtt-net
+
+networks:
+  mqtt-net:
+    external: true
+  proxy-net:
+    external: true

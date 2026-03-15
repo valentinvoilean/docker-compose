@@ -1,0 +1,16 @@
+services:
+  ring-mqtt:
+    container_name: ring-mqtt
+    image: tsightler/ring-mqtt:5.9.2
+    restart: unless-stopped
+    volumes:
+      - /share/Container/ring-mqtt:/data
+    environment:
+      - MqttHost=mosquitto
+      - MqttPort=1883
+    networks:
+      - mqtt-net
+
+networks:
+  mqtt-net:
+    external: true

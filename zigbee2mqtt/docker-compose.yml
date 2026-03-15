@@ -1,0 +1,21 @@
+services:
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt:2.9.1
+    restart: unless-stopped
+    volumes:
+      - /share/Container/zigbee2mqtt/data:/app/data
+      - /run/udev:/run/udev:ro
+    ports:
+      - 8099:8099
+    environment:
+      - TZ=Europe/Bucharest
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    privileged: true
+    networks:
+      - mqtt-net
+
+networks:
+  mqtt-net:
+    external: true
