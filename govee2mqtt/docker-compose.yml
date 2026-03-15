@@ -1,0 +1,5 @@
+services:
+  govee2mqtt:
+    container_name: govee2mqtt
+    image: ghcr.io/wez/govee2mqtt:latest
+    restart: always
