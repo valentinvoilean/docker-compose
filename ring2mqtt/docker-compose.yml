@@ -6,11 +6,6 @@ services:
     volumes:
       - /share/Container/ring-mqtt:/data
     environment:
-      - MqttHost=mosquitto
+      - MqttHost=localhsost
       - MqttPort=1883
-    networks:
-      - mqtt-net
-
-networks:
-  mqtt-net:
-    external: true
+    network_mode: host
