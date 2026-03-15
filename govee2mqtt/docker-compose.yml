@@ -5,6 +5,11 @@ services:
     restart: always
     networks:
       - mqtt-net
+    # Environment variables replace the need for an .env file
+    environment:
+      - GOVEE_MQTT_HOST=mosquitto
+      - GOVEE_MQTT_PORT=1883
+      - GOVEE_LAN_CONTROL=true
 
 networks:
   mqtt-net:
