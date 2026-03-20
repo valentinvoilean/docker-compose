@@ -1,0 +1,16 @@
+services:
+  metube:
+    image: ghcr.io/alexta69/metube:latest
+    container_name: metube
+    restart: unless-stopped
+    ports:
+      - "${METUBE_PORT:-8081}:8081"
+    environment:
+      - TZ=${TZ:-UTC}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-100}
+      - UMASK=${UMASK:-022}
+      # Optional: cap parallel jobs on a small NAS (default in image is 3)
+      # - MAX_CONCURRENT_DOWNLOADS=2
+    volumes:
+      - ${METUBE_DOWNLOADS_HOST_PATH:-/share/Container/metube/downloads}:/downloads
