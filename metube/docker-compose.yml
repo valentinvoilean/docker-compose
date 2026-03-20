@@ -10,10 +10,15 @@ services:
       - PUID=${PUID:-1000}
       - PGID=${PGID:-100}
       - UMASK=${UMASK:-022}
-      # QNAP: if startup still gets PermissionError on /downloads/.metube/, fix ownership
-      # on the NAS over SSH (see README), then set CHOWN_DIRS=false so the image skips chown.
+      # Queue/DB on a Docker volume — QNAP shares often block writes under .metube on the share.
+      - STATE_DIR=/metube/state
+      # QNAP: set false if the entrypoint cannot chown the share (see README).
       - CHOWN_DIRS=${CHOWN_DIRS:-true}
       # Optional: cap parallel jobs on a small NAS (default in image is 3)
       # - MAX_CONCURRENT_DOWNLOADS=2
     volumes:
       - ${METUBE_DOWNLOADS_HOST_PATH:-/share/Container/metube/downloads}:/downloads
+      - metube_state:/metube/state
+
+volumes:
+  metube_state:

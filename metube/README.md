@@ -13,31 +13,13 @@
 
 QNAP paths usually look like `/share/...`. If downloads should land on a media share, set `METUBE_DOWNLOADS_HOST_PATH` to that folder instead.
 
-## `PermissionError: ... '/downloads/.metube/queue'`
+The stack uses a **named Docker volume** (`metube_state`) for **`STATE_DIR`** (download queue / SQLite DB). That avoids QNAP share ACL quirks that often cause **`PermissionError: ... '/downloads/.metube/queue'`** when state lived on the share. **Finished videos still go to** the bind-mounted **`/downloads`** path on the NAS.
 
-MeTube stores its download queue under **`downloads/.metube/`** on the bind-mounted folder. That directory must be writable by the user the container runs as (`PUID` / `PGID`).
+If you ever remove the stack but keep the volume, queue/history survives a redeploy. To wipe queue only, remove the `metube_state` volume in Portainer / Container Station.
 
-1. **Align IDs with the NAS** — On the QNAP over SSH, run `id` (as the user that should own that folder). Set **`PUID` and `PGID` in Portainer to exactly those numbers**. If you use `1000` / `100` from the example but your `admin` user is e.g. `uid=500`, the container cannot write reliably.
+## `PermissionError` on `/downloads` (not `.metube`)
 
-2. **Fix ownership on the host** (SSH session on the QNAP, adjust path and numbers to match your `METUBE_DOWNLOADS_HOST_PATH` and `id`):
-
-   ```bash
-   mkdir -p /share/Container/metube/downloads
-   chown -R 1000:100 /share/Container/metube/downloads
-   chmod -R u+rwX,g+rwX,o-rwx /share/Container/metube/downloads
-   ```
-
-   Replace `1000:100` with your real `uid:gid` from `id`.
-
-3. **If anything is left over from a failed start**, remove the state folder and redeploy (downloads in `.metube` are only queue/metadata):
-
-   ```bash
-   rm -rf /share/Container/metube/downloads/.metube
-   ```
-
-4. **Optional:** On some QNAP + Docker setups, `chown` inside the container does not behave like on a normal disk. After you have fixed ownership with step 2, set **`CHOWN_DIRS=false`** in the stack environment (see `docker-compose.yml`) so MeTube does not try to change ownership on every start.
-
-After changes, recreate the stack in Portainer.
+If downloads fail with permission errors under **`/downloads`** (not the queue), align **`PUID`/`PGID`** with `id` on the QNAP for the user that should own that folder, fix ownership over SSH, and optionally set **`CHOWN_DIRS=false`** after a host `chown` if the entrypoint cannot change the share (see comments in `docker-compose.yml`).
 
 ## Updates
 
