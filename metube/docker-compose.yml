@@ -18,7 +18,7 @@ services:
       # - MAX_CONCURRENT_DOWNLOADS=2
     volumes:
       - ${METUBE_DOWNLOADS_HOST_PATH:-/share/Container/metube/downloads}:/downloads
-      - ${METUBE_DOWNLOADS_HOST_PATH_2:-/share/Downloads}:/downloads2
+      - ${METUBE_DOWNLOADS_HOST_PATH_2:-/share/Downloads}:/downloads/extra
       - metube_state:/metube/state
 
 volumes:
