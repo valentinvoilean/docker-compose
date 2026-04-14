@@ -1,0 +1,23 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.35.7
+    container_name: vaultwarden
+    restart: unless-stopped
+    ports:
+      - "${VAULTWARDEN_PORT}:80"
+    environment:
+      - TZ=${TZ:-UTC}
+      # Required behind HTTPS reverse proxy so attachments / clients work correctly
+      - DOMAIN=${VAULTWARDEN_DOMAIN}
+      - SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS_ALLOWED}
+      # Optional: random string for https://your-domain/admin (set after DOMAIN works)
+      # - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+    volumes:
+      - ${VAULTWARDEN_DATA_HOST_PATH}:/data
+    # Uncomment if you route traffic via an external Docker network (e.g. Traefik/Caddy on proxy-net):
+    networks:
+      - proxy-net
+
+networks:
+  proxy-net:
+    external: true
