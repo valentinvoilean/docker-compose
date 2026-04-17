@@ -1,7 +1,8 @@
+# Optional in stack env: CLOUDFLARED_VERSION (default: latest)
 services:
   tunnel:
     container_name: cloudflare-tunnel
-    image: cloudflare/cloudflared:2026.3.0
+    image: cloudflare/cloudflared:${CLOUDFLARED_VERSION:-latest}
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:

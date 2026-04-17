@@ -1,7 +1,8 @@
+# Optional in stack env: ZIGBEE2MQTT_VERSION (default: latest)
 services:
   zigbee2mqtt:
     container_name: zigbee2mqtt
-    image: koenkk/zigbee2mqtt:2.9.1
+    image: koenkk/zigbee2mqtt:${ZIGBEE2MQTT_VERSION:-latest}
     restart: unless-stopped
     volumes:
       - /share/Container/zigbee2mqtt/data:/app/data

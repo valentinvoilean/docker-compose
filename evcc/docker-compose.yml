@@ -1,7 +1,8 @@
+# Optional in stack env: EVCC_VERSION (default: latest)
 services:
   evcc:
     container_name: evcc
-    image: evcc/evcc:0.302.1
+    image: evcc/evcc:${EVCC_VERSION:-latest}
     restart: always
     volumes:
       - /share/Container/evcc/evcc.yaml:/etc/evcc.yaml

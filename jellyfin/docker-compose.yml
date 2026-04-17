@@ -1,6 +1,7 @@
+# Optional in stack env: JELLYFIN_VERSION (default: latest)
 services:
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
+    image: lscr.io/linuxserver/jellyfin:${JELLYFIN_VERSION:-latest}
     container_name: jellyfin
     environment:
       - PUID=1000

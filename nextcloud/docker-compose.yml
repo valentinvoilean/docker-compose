@@ -1,6 +1,8 @@
+# Optional in stack env: MARIADB_VERSION (default: latest), REDIS_TAG (default: alpine),
+# NEXTCLOUD_VERSION (default: latest)
 services:
   db:
-    image: mariadb:10.11
+    image: mariadb:${MARIADB_VERSION:-latest}
     container_name: nextcloud-db
     restart: always
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
@@ -15,14 +17,14 @@ services:
       - nextcloud-internal
 
   redis:
-    image: redis:alpine
+    image: redis:${REDIS_TAG:-alpine}
     container_name: nextcloud-redis
     restart: always
     networks:
       - nextcloud-internal
 
   app:
-    image: nextcloud:33.0.0
+    image: nextcloud:${NEXTCLOUD_VERSION:-latest}
     container_name: nextcloud-app
     restart: always
     ports:
@@ -42,7 +44,7 @@ services:
       - nextcloud-internal
       - proxy-net  # This is the "bridge" to your Cloudflare Tunnel
   cron:
-    image: nextcloud:33.0.0
+    image: nextcloud:${NEXTCLOUD_VERSION:-latest}
     container_name: nextcloud-cron
     restart: always
     volumes:

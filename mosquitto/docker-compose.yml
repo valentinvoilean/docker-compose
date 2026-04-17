@@ -1,7 +1,8 @@
+# Optional in stack env: MOSQUITTO_VERSION (default: latest)
 services:
   mosquitto:
     container_name: mosquitto
-    image: eclipse-mosquitto:latest
+    image: eclipse-mosquitto:${MOSQUITTO_VERSION:-latest}
     restart: unless-stopped
     volumes:
       - /share/Container/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf

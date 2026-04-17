@@ -1,6 +1,7 @@
+# Optional in stack env: UPTIME_KUMA_VERSION (default: latest)
 services:
   uptime-kuma:
-    image: louislam/uptime-kuma:2.2.1
+    image: louislam/uptime-kuma:${UPTIME_KUMA_VERSION:-latest}
     container_name: uptime-kuma
     restart: always
     ports:

@@ -1,6 +1,7 @@
+# Optional in stack env: VAULTWARDEN_VERSION (default: latest)
 services:
   vaultwarden:
-    image: vaultwarden/server:1.35.7
+    image: vaultwarden/server:${VAULTWARDEN_VERSION:-latest}
     container_name: vaultwarden
     restart: unless-stopped
     ports:

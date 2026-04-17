@@ -1,7 +1,8 @@
+# Optional in stack env: HOME_ASSISTANT_VERSION (default: latest)
 services:
   homeassistant:
     container_name: homeassistant
-    image: "ghcr.io/home-assistant/home-assistant:2026.2.2"
+    image: "ghcr.io/home-assistant/home-assistant:${HOME_ASSISTANT_VERSION:-latest}"
     volumes:
       - /share/Container/HASS/config:/config
       - /etc/localtime:/etc/localtime:ro

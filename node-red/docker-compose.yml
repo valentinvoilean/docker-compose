@@ -1,7 +1,8 @@
+# Optional in stack env: NODE_RED_VERSION (default: latest)
 services:
   nodered:
     container_name: nodered
-    image: nodered/node-red:4.1.6
+    image: nodered/node-red:${NODE_RED_VERSION:-latest}
     restart: always
     volumes:
       - /share/Container/nodered/data:/data

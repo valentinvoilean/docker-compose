@@ -1,7 +1,8 @@
+# Optional in stack env: GOVEE2MQTT_VERSION (default: latest)
 services:
   govee2mqtt:
     container_name: govee2mqtt
-    image: ghcr.io/wez/govee2mqtt:latest
+    image: ghcr.io/wez/govee2mqtt:${GOVEE2MQTT_VERSION:-latest}
     restart: always
     networks:
       - mqtt-net
