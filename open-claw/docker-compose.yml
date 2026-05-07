@@ -1,148 +1,109 @@
-name: openclaw
-
 services:
   openclaw-gateway:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.5.6-slim-amd64}
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
     container_name: openclaw-gateway
-
-    init: true
     restart: unless-stopped
 
-    environment:
-      HOME: /home/node
-      TERM: xterm-256color
-      TZ: ${TZ:-Europe/Bucharest}
+    # ── Host port mapping (LAN access) ────────────────────────
+    # Default OPENCLAW_BIND_ADDR=0.0.0.0 → reachable from any
+    # NAS interface (typical for LAN access on a home NAS).
+    # Lock it down by setting OPENCLAW_BIND_ADDR=127.0.0.1 in
+    # .env, in which case only the Cloudflare tunnel will work.
+    ports:
+      - "${OPENCLAW_BIND_ADDR:-0.0.0.0}:${OPENCLAW_PORT:-18789}:18789"
 
-      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
-      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
-
-      # Required. Set this in Portainer Stack Environment Variables.
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
-
-      OPENCLAW_DISABLE_BONJOUR: "1"
-      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ""
-
-      # For external Ollama, the key is not real, only a provider marker.
-      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-ollama-local}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.1.20:11434}
-      OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-qwen2.5-coder:7b}
-
-      # For Codex via OAuth / ChatGPT login, not an API key.
-      CODEX_MODEL: ${CODEX_MODEL:-openai-codex/gpt-5.4}
-
-      # Used to configure allowedOrigins.
-      OPENCLAW_PUBLIC_ORIGIN: ${OPENCLAW_PUBLIC_ORIGIN:-https://openclaw.example.com}
-      OPENCLAW_LOCAL_ORIGIN: ${OPENCLAW_LOCAL_ORIGIN:-http://127.0.0.1:18789}
+    # ── Networks ──────────────────────────────────────────────
+    # proxy-net : shared with cloudflare-tunnel (public access)
+    # default   : implicit bridge for outbound internet
+    networks:
+      - proxy-net
+      - default
 
     volumes:
-      - /share/Container/open-claw/config:/home/node/.openclaw:rw
-      - /share/Container/open-claw/workspace:/home/node/.openclaw/workspace:rw
+      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
 
-    ports:
-      # Default: local access only from the NAS.
-      # For LAN access, set OPENCLAW_LOCAL_BIND_IP=<QNAP-IP> in Portainer.
-      - "${OPENCLAW_LOCAL_BIND_IP:-127.0.0.1}:18789:18789"
+    environment:
+      # Bind to all interfaces inside the container so both the
+      # host port mapping AND cloudflared can reach it.
+      - OPENCLAW_GATEWAY_BIND=lan
+      - OPENCLAW_DISABLE_BONJOUR=1
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - NODE_ENV=production
 
-    networks:
-      proxy-net:
-        aliases:
-          - openclaw
+      # Public URL — used by the Control UI for OAuth redirects
+      # and CORS origin allow-listing.
+      - OPENCLAW_PUBLIC_URL=${OPENCLAW_PUBLIC_URL}
 
-    user: "1000:1000"
-    privileged: false
-    read_only: true
+      # AI provider keys (optional — add only the ones you use)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
 
-    cap_drop:
-      - ALL
+      # Local Ollama running on the QNAP host
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
 
+    extra_hosts:
+      # Maps "host.docker.internal" → QNAP host gateway IP so the
+      # container can reach Ollama running on the NAS itself.
+      - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:18789/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    # ── Hardening ─────────────────────────────────────────────
     security_opt:
       - no-new-privileges:true
-
-    tmpfs:
-      - /tmp:rw,nosuid,nodev,size=1024m
-      - /home/node/.cache:rw,nosuid,nodev,size=512m
-
+    cap_drop:
+      - ALL
     pids_limit: 512
-    mem_limit: ${OPENCLAW_MEM_LIMIT:-6g}
+    mem_limit: 2g
+    memswap_limit: 2g
+    cpus: "2.0"
 
     logging:
-      driver: json-file
+      driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
-    command:
-      - /bin/sh
-      - -lc
-      - |
-        echo "[openclaw] setup mode. Container will stay alive."
-        sleep infinity
-
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
   openclaw-cli:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.5.6-slim-amd64}
-    profiles:
-      - tools
-
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    container_name: openclaw-cli
+    # Shares the gateway's network namespace — reaches it on
+    # 127.0.0.1 inside the namespace, no external port needed.
     network_mode: "service:openclaw-gateway"
-
-    environment:
-      HOME: /home/node
-      TERM: xterm-256color
-      TZ: ${TZ:-Europe/Bucharest}
-
-      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
-      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
-
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:?Set OPENCLAW_GATEWAY_TOKEN in Portainer}
-      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ""
-
-      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-ollama-local}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.1.20:11434}
-      OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-qwen2.5-coder:7b}
-
-      CODEX_MODEL: ${CODEX_MODEL:-openai-codex/gpt-5.4}
-
-      OPENCLAW_PUBLIC_ORIGIN: ${OPENCLAW_PUBLIC_ORIGIN:-https://openclaw.example.com}
-      OPENCLAW_LOCAL_ORIGIN: ${OPENCLAW_LOCAL_ORIGIN:-http://127.0.0.1:18789}
-
-      BROWSER: echo
-
     volumes:
-      - /share/Container/open-claw/config:/home/node/.openclaw:rw
-      - /share/Container/open-claw/workspace:/home/node/.openclaw/workspace:rw
-
-    user: "1000:1000"
-    privileged: false
-    read_only: true
-
-    cap_drop:
-      - ALL
-
+      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+    entrypoint: ["node", "dist/index.js"]
+    profiles:
+      - cli            # only starts when explicitly invoked
+    depends_on:
+      - openclaw-gateway
     security_opt:
       - no-new-privileges:true
-
-    tmpfs:
-      - /tmp:rw,nosuid,nodev,size=1024m
-      - /home/node/.cache:rw,nosuid,nodev,size=512m
-
-    stdin_open: true
-    tty: true
-    init: true
-    entrypoint: ["node", "dist/index.js"]
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 512m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 networks:
+  # External network created by the cloudflare-tunnel stack.
+  # We attach to it; we don't create it.
   proxy-net:
     external: true
+    name: proxy-net
+  # Implicit bridge for outbound traffic (provider APIs, etc.)
+  default:
+    driver: bridge
