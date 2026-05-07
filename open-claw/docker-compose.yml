@@ -71,36 +71,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    container_name: openclaw-cli
-    # Shares the gateway's network namespace — reaches it on
-    # 127.0.0.1 inside the namespace, no external port needed.
-    network_mode: "service:openclaw-gateway"
-    volumes:
-      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
-    entrypoint: ["node", "dist/index.js"]
-    profiles:
-      - cli            # only starts when explicitly invoked
-    depends_on:
-      - openclaw-gateway
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    pids_limit: 256
-    mem_limit: 512m
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
 
 networks:
   # External network created by the cloudflare-tunnel stack.
   # We attach to it; we don't create it.
   proxy-net:
     external: true
-    name: proxy-net
   # Implicit bridge for outbound traffic (provider APIs, etc.)
   default:
     driver: bridge
