@@ -2,14 +2,11 @@ name: openclaw
 
 services:
   openclaw-gateway:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.5.6-slim-amd64}
     container_name: openclaw-gateway
 
     init: true
     restart: unless-stopped
-
-    env_file:
-      - .env
 
     environment:
       HOME: /home/node
@@ -18,18 +15,32 @@ services:
 
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+
+      # Required. Set this in Portainer Stack Environment Variables.
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+
       OPENCLAW_DISABLE_BONJOUR: "1"
       OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ""
 
-      # Marker pentru providerul Ollama; cheia nu e reală.
+      # For external Ollama, the key is not real, only a provider marker.
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-ollama-local}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.1.20:11434}
+      OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-qwen2.5-coder:7b}
+
+      # For Codex via OAuth / ChatGPT login, not an API key.
+      CODEX_MODEL: ${CODEX_MODEL:-openai-codex/gpt-5.4}
+
+      # Used to configure allowedOrigins.
+      OPENCLAW_PUBLIC_ORIGIN: ${OPENCLAW_PUBLIC_ORIGIN:-https://openclaw.example.com}
+      OPENCLAW_LOCAL_ORIGIN: ${OPENCLAW_LOCAL_ORIGIN:-http://127.0.0.1:18789}
 
     volumes:
-      - /share/Container/open-claw/config:/home/node/.openclaw
-      - /share/Container/open-claw/workspace:/home/node/.openclaw/workspace
+      - /share/Container/open-claw/config:/home/node/.openclaw:rw
+      - /share/Container/open-claw/workspace:/home/node/.openclaw/workspace:rw
 
     ports:
+      # Default: local access only from the NAS.
+      # For LAN access, set OPENCLAW_LOCAL_BIND_IP=<QNAP-IP> in Portainer.
       - "${OPENCLAW_LOCAL_BIND_IP:-127.0.0.1}:18789:18789"
 
     networks:
@@ -39,12 +50,20 @@ services:
 
     user: "1000:1000"
     privileged: false
+    read_only: true
+
     cap_drop:
       - ALL
+
     security_opt:
       - no-new-privileges:true
+
     tmpfs:
       - /tmp:rw,nosuid,nodev,size=1024m
+      - /home/node/.cache:rw,nosuid,nodev,size=512m
+
+    pids_limit: 512
+    mem_limit: ${OPENCLAW_MEM_LIMIT:-6g}
 
     logging:
       driver: json-file
@@ -63,39 +82,65 @@ services:
         "18789"
       ]
 
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   openclaw-cli:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.5.6-slim-amd64}
     profiles:
       - tools
 
     network_mode: "service:openclaw-gateway"
 
-    env_file:
-      - .env
-
     environment:
       HOME: /home/node
       TERM: xterm-256color
       TZ: ${TZ:-Europe/Bucharest}
+
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:?Set OPENCLAW_GATEWAY_TOKEN in Portainer}
       OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ""
+
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-ollama-local}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.1.20:11434}
+      OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-qwen2.5-coder:7b}
+
+      CODEX_MODEL: ${CODEX_MODEL:-openai-codex/gpt-5.4}
+
+      OPENCLAW_PUBLIC_ORIGIN: ${OPENCLAW_PUBLIC_ORIGIN:-https://openclaw.example.com}
+      OPENCLAW_LOCAL_ORIGIN: ${OPENCLAW_LOCAL_ORIGIN:-http://127.0.0.1:18789}
+
       BROWSER: echo
 
     volumes:
-      - /share/Container/open-claw/config:/home/node/.openclaw
-      - /share/Container/open-claw/workspace:/home/node/.openclaw/workspace
+      - /share/Container/open-claw/config:/home/node/.openclaw:rw
+      - /share/Container/open-claw/workspace:/home/node/.openclaw/workspace:rw
 
     user: "1000:1000"
     privileged: false
+    read_only: true
+
     cap_drop:
       - ALL
+
     security_opt:
       - no-new-privileges:true
+
     tmpfs:
       - /tmp:rw,nosuid,nodev,size=1024m
+      - /home/node/.cache:rw,nosuid,nodev,size=512m
 
     stdin_open: true
     tty: true
