@@ -72,15 +72,11 @@ services:
         max-file: "3"
 
     command:
-      [
-        "node",
-        "dist/index.js",
-        "gateway",
-        "--bind",
-        "lan",
-        "--port",
-        "18789"
-      ]
+      - /bin/sh
+      - -lc
+      - |
+        echo "[openclaw] setup mode. Container will stay alive."
+        sleep infinity
 
     healthcheck:
       test:
