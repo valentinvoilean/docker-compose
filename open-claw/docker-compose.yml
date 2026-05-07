@@ -1,0 +1,107 @@
+name: openclaw
+
+services:
+  openclaw-gateway:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    container_name: openclaw-gateway
+
+    init: true
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      TZ: ${TZ:-Europe/Bucharest}
+
+      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      OPENCLAW_DISABLE_BONJOUR: "1"
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ""
+
+      # Marker pentru providerul Ollama; cheia nu e reală.
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-ollama-local}
+
+    volumes:
+      - /share/Container/open-claw/config:/home/node/.openclaw
+      - /share/Container/open-claw/workspace:/home/node/.openclaw/workspace
+
+    ports:
+      - "${OPENCLAW_LOCAL_BIND_IP:-127.0.0.1}:18789:18789"
+
+    networks:
+      proxy-net:
+        aliases:
+          - openclaw
+
+    user: "1000:1000"
+    privileged: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=1024m
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    command:
+      [
+        "node",
+        "dist/index.js",
+        "gateway",
+        "--bind",
+        "lan",
+        "--port",
+        "18789"
+      ]
+
+  openclaw-cli:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    profiles:
+      - tools
+
+    network_mode: "service:openclaw-gateway"
+
+    env_file:
+      - .env
+
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      TZ: ${TZ:-Europe/Bucharest}
+      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ""
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-ollama-local}
+      BROWSER: echo
+
+    volumes:
+      - /share/Container/open-claw/config:/home/node/.openclaw
+      - /share/Container/open-claw/workspace:/home/node/.openclaw/workspace
+
+    user: "1000:1000"
+    privileged: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=1024m
+
+    stdin_open: true
+    tty: true
+    init: true
+    entrypoint: ["node", "dist/index.js"]
+
+networks:
+  proxy-net:
+    external: true
