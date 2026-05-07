@@ -71,9 +71,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  openclaw-cli:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
     container_name: openclaw-cli
     # Shares the gateway's network namespace — reaches it on
     # 127.0.0.1 inside the namespace, no external port needed.
