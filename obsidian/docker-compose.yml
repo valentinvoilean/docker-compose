@@ -1,0 +1,66 @@
+services:
+  obsidian:
+    image: lscr.io/linuxserver/obsidian:latest
+    container_name: obsidian
+    restart: unless-stopped
+
+    # ── LAN access only ───────────────────────────────────────
+    # Accessible at http://<QNAP-IP>:3010 from your local network.
+    # Also attached to proxy-net for inter-container communication.
+    ports:
+      - "${OBSIDIAN_BIND_ADDR:-0.0.0.0}:${OBSIDIAN_PORT:-3010}:3000"
+
+    # ── Networks ──────────────────────────────────────────────
+    # proxy-net : shared with cloudflare-tunnel / open-claw
+    # default   : implicit bridge for outbound internet
+    networks:
+      - proxy-net
+      - default
+
+    environment:
+      - PUID=${OBSIDIAN_PUID:-1000}
+      - PGID=${OBSIDIAN_PGID:-1000}
+      - TZ=${TZ:-Europe/Bucharest}
+      # KasmVNC options (web UI settings)
+      - CUSTOM_PORT=3000
+      - CUSTOM_HTTPS_PORT=3001
+
+    volumes:
+      # Obsidian config and app data
+      - ${OBSIDIAN_CONFIG_DIR:-/share/Container/obsidian/config}:/config
+      # Your vault(s) — mount the parent folder so you can access
+      # multiple vaults from within Obsidian
+      - ${OBSIDIAN_VAULTS_DIR:-/share/Container/obsidian/vaults}:/vaults
+
+    # ── Hardware acceleration (optional) ─────────────────────
+    # Uncomment if your QNAP TS-264 supports it and you want
+    # smoother rendering in the web UI.
+    # devices:
+    #   - /dev/dri:/dev/dri
+
+    # ── Hardening ─────────────────────────────────────────────
+    security_opt:
+      - no-new-privileges:true
+    # linuxserver images need SYS_ADMIN for the desktop environment
+    cap_add:
+      - SYS_ADMIN
+    shm_size: "1gb"
+    pids_limit: 512
+    mem_limit: 2g
+    memswap_limit: 2g
+    cpus: "2.0"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  # External network created by the cloudflare-tunnel stack.
+  # We attach to it; we don't create it.
+  proxy-net:
+    external: true
+  # Implicit bridge for outbound traffic.
+  default:
+    driver: bridge
