@@ -4,7 +4,6 @@ services:
     container_name: openclaw-gateway
     restart: unless-stopped
 
-    # ── Host port mapping (LAN access) ────────────────────────
     # Default OPENCLAW_BIND_ADDR=0.0.0.0 → reachable from any
     # NAS interface (typical for LAN access on a home NAS).
     # Lock it down by setting OPENCLAW_BIND_ADDR=127.0.0.1 in
@@ -12,7 +11,6 @@ services:
     ports:
       - "${OPENCLAW_BIND_ADDR:-0.0.0.0}:${OPENCLAW_PORT:-18789}:18789"
 
-    # ── Networks ──────────────────────────────────────────────
     # proxy-net : shared with cloudflare-tunnel (public access)
     # default   : implicit bridge for outbound internet
     networks:
@@ -40,31 +38,16 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
 
-      # Local Ollama running on the QNAP host
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      # Ollama running on a separate LAN host — set OLLAMA_BASE_URL
+      # in .env to e.g. http://192.168.1.42:11434
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OLLAMA_HOST=${OLLAMA_HOST:-${OLLAMA_BASE_URL}}
 
-    extra_hosts:
-      # Maps "host.docker.internal" → QNAP host gateway IP so the
-      # container can reach Ollama running on the NAS itself.
-      - "host.docker.internal:host-gateway"
-
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:18789/healthz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-    # ── Hardening ─────────────────────────────────────────────
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     pids_limit: 512
-    mem_limit: 2g
-    memswap_limit: 2g
-    cpus: "2.0"
 
     logging:
       driver: "json-file"
