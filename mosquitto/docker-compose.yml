@@ -16,5 +16,3 @@ services:
 networks:
   mqtt-net:
     external: true
-  proxy-net:
-    external: true

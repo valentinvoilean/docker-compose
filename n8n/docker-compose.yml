@@ -28,6 +28,7 @@ services:
     networks:
       - proxy-net
       - n8n-net
+      - mqtt-net
 
   postgres:
     image: postgres:${POSTGRES_VERSION:-16-alpine}
@@ -50,4 +51,6 @@ services:
 networks:
   n8n-net:
   proxy-net:
+    external: true
+  mqtt-net:
     external: true
