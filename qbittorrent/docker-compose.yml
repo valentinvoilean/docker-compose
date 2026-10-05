@@ -12,6 +12,7 @@ services:
     volumes:
       - ${QBITTORRENT_CONFIG_HOST_PATH:-/share/Container/qbittorrent/config}:/config
       - ${QBITTORRENT_DOWNLOADS_HOST_PATH:-/share/Downloads}:/downloads
+      - ${QBITTORRENT_DOWNLOADS_HOST_PATH_2:-/share/Downloads2}:/downloads2
     ports:
       - "${QBITTORRENT_WEBUI_PORT:-8080}:${QBITTORRENT_WEBUI_PORT:-8080}"
       - "${QBITTORRENT_TORRENTING_PORT:-6881}:${QBITTORRENT_TORRENTING_PORT:-6881}"
