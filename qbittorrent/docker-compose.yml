@@ -1,0 +1,18 @@
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:${QBITTORRENT_VERSION:-latest}
+    container_name: qbittorrent
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-100}
+      - TZ=${TZ:-Europe/Bucharest}
+      - WEBUI_PORT=${QBITTORRENT_WEBUI_PORT:-8080}
+      - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT:-6881}
+    volumes:
+      - ${QBITTORRENT_CONFIG_HOST_PATH:-/share/Container/qbittorrent/config}:/config
+      - ${QBITTORRENT_DOWNLOADS_HOST_PATH:-/share/Downloads}:/downloads
+    ports:
+      - "${QBITTORRENT_WEBUI_PORT:-8080}:${QBITTORRENT_WEBUI_PORT:-8080}"
+      - "${QBITTORRENT_TORRENTING_PORT:-6881}:${QBITTORRENT_TORRENTING_PORT:-6881}"
+      - "${QBITTORRENT_TORRENTING_PORT:-6881}:${QBITTORRENT_TORRENTING_PORT:-6881}/udp"
